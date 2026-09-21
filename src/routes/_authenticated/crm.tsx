@@ -279,7 +279,7 @@ function Crm() {
                           <p>{daysSince(lead.stage_changed_at)} dia(s) nesta etapa</p>
                         </div>
                         <Select
-                          value={lead.stage_id ?? undefined}
+                          value={lead.stage_id ?? ""}
                           onValueChange={(v) => moveLead.mutate({ leadId: lead.id, stageId: v })}
                         >
                           <SelectTrigger className="mt-2 h-8 text-xs lg:hidden">
