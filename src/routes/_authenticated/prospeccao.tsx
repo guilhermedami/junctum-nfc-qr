@@ -22,6 +22,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { dateBR } from "@/lib/junctum";
 
+import type { Database } from "@/integrations/supabase/types";
+
+type Company = Database["public"]["Tables"]["companies"]["Row"];
+
 export const Route = createFileRoute("/_authenticated/prospeccao")({
   component: Prospeccao,
 });
@@ -70,9 +74,10 @@ const LABELS: Record<string, string> = {
 
 function parseCsv(text: string) {
   const lines = text.trim().split(/\r?\n/);
-  if (!lines.length) return [];
-  const sep = lines[0].includes(";") ? ";" : ",";
-  const headers = lines[0].split(sep).map((h) => h.trim().toLowerCase());
+  const headerLine = lines[0];
+  if (!headerLine) return [];
+  const sep = headerLine.includes(";") ? ";" : ",";
+  const headers = headerLine.split(sep).map((h) => h.trim().toLowerCase());
   return lines.slice(1).map((line) => {
     const cells = line.split(sep);
     const row: Record<string, string> = {};
@@ -120,7 +125,7 @@ function Prospeccao() {
       const { data: userData } = await supabase.auth.getUser();
       const { error } = await supabase.from("companies").insert({
         ...payload,
-        nome_empresa: payload.nome_empresa,
+        nome_empresa: payload["nome_empresa"] ?? "",
         owner_id: userData.user?.id ?? null,
         created_by: userData.user?.id ?? null,
       });
@@ -138,11 +143,12 @@ function Prospeccao() {
   const importCsv = useMutation({
     mutationFn: async (rows: Record<string, string>[]) => {
       const { data: userData } = await supabase.auth.getUser();
-      const valid = rows.filter((r) => r.nome_empresa);
+      const valid = rows.filter((r) => r["nome_empresa"]);
       if (!valid.length) throw new Error("Nenhuma linha válida (coluna nome_empresa obrigatória)");
       const { error } = await supabase.from("companies").insert(
         valid.map((r) => ({
           ...r,
+          nome_empresa: r["nome_empresa"] ?? "",
           origem: "csv",
           owner_id: userData.user?.id ?? null,
           created_by: userData.user?.id ?? null,
@@ -159,28 +165,25 @@ function Prospeccao() {
   });
 
   const toCrm = useMutation({
-    mutationFn: async (company: Record<string, unknown>) => {
+    mutationFn: async (company: Company) => {
       const { data: userData } = await supabase.auth.getUser();
       const firstStage = stages[0];
       const { error } = await supabase.from("leads").insert({
-        company_id: company.id as string,
-        nome_empresa: company.nome_empresa as string,
-        responsavel: (company.responsavel as string) ?? null,
-        telefone: (company.telefone as string) ?? null,
-        whatsapp: (company.whatsapp as string) ?? null,
-        email: (company.email as string) ?? null,
-        cidade: (company.cidade as string) ?? null,
-        estado: (company.estado as string) ?? null,
-        endereco: (company.endereco as string) ?? null,
-        segmento: (company.segmento as string) ?? null,
+        company_id: company.id,
+        nome_empresa: company.nome_empresa,
+        responsavel: company.responsavel,
+        telefone: company.telefone,
+        whatsapp: company.whatsapp,
+        email: company.email,
+        cidade: company.cidade,
+        estado: company.estado,
+        endereco: company.endereco,
+        segmento: company.segmento,
         stage_id: firstStage?.id ?? null,
         owner_id: userData.user?.id ?? null,
       });
       if (error) throw error;
-      await supabase
-        .from("companies")
-        .update({ status: "no_crm" })
-        .eq("id", company.id as string);
+      await supabase.from("companies").update({ status: "no_crm" }).eq("id", company.id);
     },
     onSuccess: () => {
       toast.success("Adicionado ao CRM");
@@ -265,7 +268,7 @@ function Prospeccao() {
                 </div>
                 <DialogFooter>
                   <Button
-                    disabled={!form.nome_empresa || createCompany.isPending}
+                    disabled={!form["nome_empresa"] || createCompany.isPending}
                     onClick={() => createCompany.mutate(form)}
                   >
                     Salvar empresa
