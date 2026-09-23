@@ -34,7 +34,10 @@ function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <span className="text-display text-lg font-bold tracking-tight">JUNCTUM</span>
+        <div className="flex items-center gap-1.5" aria-label="JUNCTUM">
+          <img src="/junctum-symbol.png" alt="" className="size-10 object-contain" />
+          <span className="text-display text-lg font-bold tracking-tight">JUNCTUM</span>
+        </div>
         <Button asChild size="sm">
           <Link to="/auth">Entrar</Link>
         </Button>
