@@ -22,10 +22,8 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nome, setNome] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { data: session } = useSession();
@@ -38,26 +36,9 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { nome },
-          },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          toast.success("Conta criada. Confirme o e-mail para entrar.");
-        } else {
-          navigate({ to: "/dashboard", replace: true });
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        navigate({ to: "/dashboard", replace: true });
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Não foi possível continuar");
     } finally {
@@ -102,22 +83,12 @@ function AuthPage() {
           <div className="lg:hidden">
             <span className="text-display text-xl font-bold">JUNCTUM</span>
           </div>
-          <h1 className="mt-8 text-2xl font-semibold">
-            {mode === "login" ? "Entrar" : "Criar conta"}
-          </h1>
+          <h1 className="mt-8 text-2xl font-semibold">Entrar</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {mode === "login"
-              ? "Acesse o painel comercial."
-              : "O primeiro usuário registrado recebe o perfil de administrador."}
+            Acesse o painel com sua conta convidada.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
-            {mode === "signup" && (
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
-                <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input
@@ -134,7 +105,7 @@ function AuthPage() {
               <Input
                 id="password"
                 type="password"
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 minLength={6}
@@ -142,7 +113,7 @@ function AuthPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "..." : mode === "login" ? "Entrar" : "Criar conta"}
+              {loading ? "..." : "Entrar"}
             </Button>
           </form>
 
@@ -156,13 +127,9 @@ function AuthPage() {
             Continuar com Google
           </Button>
 
-          <button
-            type="button"
-            onClick={() => setMode(mode === "login" ? "signup" : "login")}
-            className="mt-6 w-full text-sm text-muted-foreground transition-colors hover:text-electric"
-          >
-            {mode === "login" ? "Não tem conta? Criar conta" : "Já tem conta? Entrar"}
-          </button>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Novos acessos são enviados por convite do administrador.
+          </p>
         </div>
       </div>
     </div>

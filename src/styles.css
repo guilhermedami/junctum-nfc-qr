@@ -2,6 +2,22 @@
 @source "../src";
 @import "tw-animate-css";
 
+@media print {
+  aside,
+  nav {
+    display: none !important;
+  }
+  body:has(.client-report) [class~="lg:pl-60"] {
+    padding-left: 0 !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  body {
+    print-color-adjust: exact;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*

@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CLIENT_STATUS, dateBR, num } from "@/lib/junctum";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/_authenticated/clientes")({
   component: Clientes,
@@ -126,18 +127,11 @@ function Clientes() {
 
   const updateReviews = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: number }) => {
-      const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase
-        .from("clients")
-        .update({ reviews_current: value, reviews_last_updated_at: new Date().toISOString() })
-        .eq("id", id);
-      if (error) throw error;
-      await supabase.from("review_snapshots").insert({
-        client_id: id,
-        total_reviews: value,
-        fonte: "manual",
-        created_by: userData.user?.id ?? null,
+      const { error } = await (supabase as SupabaseClient).rpc("record_review_snapshot", {
+        p_client_id: id,
+        p_total: value,
       });
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Avaliações atualizadas");
@@ -284,7 +278,8 @@ function Clientes() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const value = Number((e.target as HTMLInputElement).value);
-                      if (value) updateReviews.mutate({ id: c.id, value });
+                      if (Number.isInteger(value) && value >= 0)
+                        updateReviews.mutate({ id: c.id, value });
                     }
                   }}
                 />
@@ -293,6 +288,11 @@ function Clientes() {
                 </span>
                 <Button size="sm" variant="outline" asChild>
                   <Link to="/placas">Placas do cliente</Link>
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/relatorios/$id" params={{ id: c.id }}>
+                    Relatório
+                  </Link>
                 </Button>
               </div>
             </div>

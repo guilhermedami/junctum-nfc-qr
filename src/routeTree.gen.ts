@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated/equipe'
 import { Route as AuthenticatedFollowupsRouteImport } from './routes/_authenticated/followups'
 import { Route as AuthenticatedMensagensRouteImport } from './routes/_authenticated/mensagens'
 import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated/metas'
@@ -22,6 +24,7 @@ import { Route as AuthenticatedPlacasRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedProspeccaoRouteImport } from './routes/_authenticated/prospeccao'
 import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
 import { Route as AuthenticatedPlacasIdRouteImport } from './routes/_authenticated/placas.$id'
+import { Route as AuthenticatedRelatoriosIdRouteImport } from './routes/_authenticated/relatorios.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -37,6 +40,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DefinirSenhaRoute = DefinirSenhaRouteImport.update({
+  id: '/definir-senha',
+  path: '/definir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
   id: '/clientes',
   path: '/clientes',
@@ -50,6 +58,11 @@ const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedEquipeRoute = AuthenticatedEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFollowupsRoute = AuthenticatedFollowupsRouteImport.update({
@@ -87,13 +100,21 @@ const AuthenticatedPlacasIdRoute = AuthenticatedPlacasIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedPlacasRoute,
 } as any)
+const AuthenticatedRelatoriosIdRoute =
+  AuthenticatedRelatoriosIdRouteImport.update({
+    id: '/relatorios/$id',
+    path: '/relatorios/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
   '/followups': typeof AuthenticatedFollowupsRoute
   '/mensagens': typeof AuthenticatedMensagensRoute
   '/metas': typeof AuthenticatedMetasRoute
@@ -101,13 +122,16 @@ export interface FileRoutesByFullPath {
   '/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
   '/placas/$id': typeof AuthenticatedPlacasIdRoute
+  '/relatorios/$id': typeof AuthenticatedRelatoriosIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
   '/followups': typeof AuthenticatedFollowupsRoute
   '/mensagens': typeof AuthenticatedMensagensRoute
   '/metas': typeof AuthenticatedMetasRoute
@@ -115,15 +139,18 @@ export interface FileRoutesByTo {
   '/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
   '/placas/$id': typeof AuthenticatedPlacasIdRoute
+  '/relatorios/$id': typeof AuthenticatedRelatoriosIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/definir-senha': typeof DefinirSenhaRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
   '/_authenticated/followups': typeof AuthenticatedFollowupsRoute
   '/_authenticated/mensagens': typeof AuthenticatedMensagensRoute
   '/_authenticated/metas': typeof AuthenticatedMetasRoute
@@ -131,15 +158,18 @@ export interface FileRoutesById {
   '/_authenticated/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/_authenticated/leads/$id': typeof AuthenticatedLeadsIdRoute
   '/_authenticated/placas/$id': typeof AuthenticatedPlacasIdRoute
+  '/_authenticated/relatorios/$id': typeof AuthenticatedRelatoriosIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
+    | '/definir-senha'
     | '/clientes'
     | '/crm'
     | '/dashboard'
+    | '/equipe'
     | '/followups'
     | '/mensagens'
     | '/metas'
@@ -147,13 +177,16 @@ export interface FileRouteTypes {
     | '/prospeccao'
     | '/leads/$id'
     | '/placas/$id'
+    | '/relatorios/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/definir-senha'
     | '/clientes'
     | '/crm'
     | '/dashboard'
+    | '/equipe'
     | '/followups'
     | '/mensagens'
     | '/metas'
@@ -161,14 +194,17 @@ export interface FileRouteTypes {
     | '/prospeccao'
     | '/leads/$id'
     | '/placas/$id'
+    | '/relatorios/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/definir-senha'
     | '/_authenticated/clientes'
     | '/_authenticated/crm'
     | '/_authenticated/dashboard'
+    | '/_authenticated/equipe'
     | '/_authenticated/followups'
     | '/_authenticated/mensagens'
     | '/_authenticated/metas'
@@ -176,12 +212,14 @@ export interface FileRouteTypes {
     | '/_authenticated/prospeccao'
     | '/_authenticated/leads/$id'
     | '/_authenticated/placas/$id'
+    | '/_authenticated/relatorios/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DefinirSenhaRoute: typeof DefinirSenhaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -207,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/definir-senha': {
+      id: '/definir-senha'
+      path: '/definir-senha'
+      fullPath: '/definir-senha'
+      preLoaderRoute: typeof DefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/clientes': {
       id: '/_authenticated/clientes'
       path: '/clientes'
@@ -226,6 +271,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/equipe': {
+      id: '/_authenticated/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof AuthenticatedEquipeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/followups': {
@@ -277,6 +329,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlacasIdRouteImport
       parentRoute: typeof AuthenticatedPlacasRoute
     }
+    '/_authenticated/relatorios/$id': {
+      id: '/_authenticated/relatorios/$id'
+      path: '/relatorios/$id'
+      fullPath: '/relatorios/$id'
+      preLoaderRoute: typeof AuthenticatedRelatoriosIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -295,24 +354,28 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
   AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
   AuthenticatedFollowupsRoute: typeof AuthenticatedFollowupsRoute
   AuthenticatedMensagensRoute: typeof AuthenticatedMensagensRoute
   AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
   AuthenticatedPlacasRoute: typeof AuthenticatedPlacasRouteWithChildren
   AuthenticatedProspeccaoRoute: typeof AuthenticatedProspeccaoRoute
   AuthenticatedLeadsIdRoute: typeof AuthenticatedLeadsIdRoute
+  AuthenticatedRelatoriosIdRoute: typeof AuthenticatedRelatoriosIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
   AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
   AuthenticatedFollowupsRoute: AuthenticatedFollowupsRoute,
   AuthenticatedMensagensRoute: AuthenticatedMensagensRoute,
   AuthenticatedMetasRoute: AuthenticatedMetasRoute,
   AuthenticatedPlacasRoute: AuthenticatedPlacasRouteWithChildren,
   AuthenticatedProspeccaoRoute: AuthenticatedProspeccaoRoute,
   AuthenticatedLeadsIdRoute: AuthenticatedLeadsIdRoute,
+  AuthenticatedRelatoriosIdRoute: AuthenticatedRelatoriosIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -322,6 +385,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  DefinirSenhaRoute: DefinirSenhaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

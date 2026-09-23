@@ -13,24 +13,18 @@ import {
   YAxis,
 } from "recharts";
 
-import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { brl, num, dateBR } from "@/lib/junctum";
+import { fetchAccessSummary } from "@/lib/access-summary";
+import { fetchCommercialSummary } from "@/lib/commercial-summary";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
 type Range = 7 | 30 | 90;
-
-function startOf(days: number) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - (days - 1));
-  return d;
-}
 
 function Metric({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -48,60 +42,29 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", range],
     queryFn: async () => {
-      const since = startOf(range).toISOString();
-      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const [stages, leads, sales, clients, plates, events, followups] = await Promise.all([
-        supabase.from("pipeline_stages").select("id, nome, tipo").eq("arquivada", false),
-        supabase.from("leads").select("id, stage_id, valor_estimado, created_at"),
-        supabase.from("sales").select("id, valor, data_venda"),
-        supabase.from("clients").select("id, status, created_at"),
-        supabase.from("plates").select("id, status"),
-        supabase.from("access_events").select("id, source, created_at").gte("created_at", since),
-        supabase.from("followups").select("id, data, status"),
+      const [commercial, access] = await Promise.all([
+        fetchCommercialSummary(),
+        fetchAccessSummary({ days: range }),
       ]);
-
-      const allEvents = await supabase
-        .from("access_events")
-        .select("id, source, created_at");
-
-      return {
-        stages: stages.data ?? [],
-        leads: leads.data ?? [],
-        sales: sales.data ?? [],
-        clients: clients.data ?? [],
-        plates: plates.data ?? [],
-        events: events.data ?? [],
-        allEvents: allEvents.data ?? [],
-        followups: followups.data ?? [],
-        monthStart,
-        todayISO: today.toISOString(),
-      };
+      return { commercial, access };
     },
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <p className="text-sm text-muted-foreground">Carregando dados…</p>;
   }
+  if (!data)
+    return (
+      <p className="text-sm text-destructive">
+        Não foi possível carregar o dashboard. Verifique as migrations do banco.
+      </p>
+    );
 
-  const stageName = (id: string | null) =>
-    data.stages.find((s) => s.id === id)?.nome?.toLowerCase() ?? "";
-  const countStage = (needle: string) =>
-    data.leads.filter((l) => stageName(l.stage_id).includes(needle)).length;
-
-  const monthSales = data.sales.filter((s) => new Date(s.data_venda) >= new Date(data.monthStart));
-  const faturamento = monthSales.reduce((acc, s) => acc + Number(s.valor ?? 0), 0);
-  const ticket = monthSales.length ? faturamento / monthSales.length : 0;
-  const conversao = data.leads.length ? (data.sales.length / data.leads.length) * 100 : 0;
-
-  const eventsToday = data.allEvents.filter((e) => e.created_at >= data.todayISO);
-  const inRange = (days: number) =>
-    data.allEvents.filter((e) => new Date(e.created_at) >= startOf(days));
-  const monthEvents = data.allEvents.filter((e) => e.created_at >= data.monthStart);
-  const bySource = (list: { source: string }[], s: string) =>
-    list.filter((e) => e.source === s).length;
+  const { commercial } = data;
+  const ticket = commercial.sales.mes ? commercial.sales.faturamento / commercial.sales.mes : 0;
+  const conversao = commercial.leads.total
+    ? (commercial.sales.total / commercial.leads.total) * 100
+    : 0;
 
   // daily series
   const days: { dia: string; nfc: number; qr: number; total: number }[] = [];
@@ -109,24 +72,15 @@ function Dashboard() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - i);
-    const next = new Date(d);
-    next.setDate(next.getDate() + 1);
-    const dayEvents = data.events.filter(
-      (e) => new Date(e.created_at) >= d && new Date(e.created_at) < next,
-    );
+    const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const dayEvents = data.access.series.find((e) => e.day === day);
     days.push({
       dia: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-      nfc: bySource(dayEvents, "nfc"),
-      qr: bySource(dayEvents, "qr"),
-      total: dayEvents.length,
+      nfc: dayEvents?.nfc ?? 0,
+      qr: dayEvents?.qr ?? 0,
+      total: dayEvents?.total ?? 0,
     });
   }
-
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const followupsHoje = data.followups.filter((f) => f.data === todayStr && f.status === "pendente");
-  const followupsAtrasados = data.followups.filter(
-    (f) => f.data < todayStr && f.status === "pendente",
-  );
 
   return (
     <div>
@@ -155,11 +109,11 @@ function Dashboard() {
             Prospecção
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Metric label="Leads" value={num(data.leads.length)} />
-            <Metric label="Leads novos" value={num(countStage("novo"))} />
-            <Metric label="Contatados" value={num(countStage("contatado"))} />
-            <Metric label="Interessados" value={num(countStage("interessado"))} />
-            <Metric label="Propostas abertas" value={num(countStage("proposta"))} />
+            <Metric label="Leads" value={num(commercial.leads.total)} />
+            <Metric label="Leads novos" value={num(commercial.leads.novos)} />
+            <Metric label="Contatados" value={num(commercial.leads.contatados)} />
+            <Metric label="Interessados" value={num(commercial.leads.interessados)} />
+            <Metric label="Propostas abertas" value={num(commercial.leads.propostas)} />
           </div>
         </section>
 
@@ -169,8 +123,8 @@ function Dashboard() {
               Vendas (mês atual)
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Metric label="Vendas no mês" value={num(monthSales.length)} />
-              <Metric label="Faturamento" value={brl(faturamento)} />
+              <Metric label="Vendas no mês" value={num(commercial.sales.mes)} />
+              <Metric label="Faturamento" value={brl(commercial.sales.faturamento)} />
               <Metric label="Ticket médio" value={brl(ticket)} />
               <Metric label="Taxa de conversão" value={`${conversao.toFixed(1)}%`} />
             </div>
@@ -180,21 +134,13 @@ function Dashboard() {
               Clientes e placas
             </h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Metric
-                label="Clientes ativos"
-                value={num(data.clients.filter((c) => c.status === "ativo").length)}
-              />
-              <Metric
-                label="Novos clientes (mês)"
-                value={num(data.clients.filter((c) => c.created_at >= data.monthStart).length)}
-              />
-              <Metric label="Placas totais" value={num(data.plates.length)} />
+              <Metric label="Clientes ativos" value={num(commercial.clients.ativos)} />
+              <Metric label="Novos clientes (mês)" value={num(commercial.clients.novos)} />
+              <Metric label="Placas totais" value={num(commercial.plates.total)} />
               <Metric
                 label="Placas ativas"
-                value={num(data.plates.filter((p) => p.status === "ativa").length)}
-                hint={`${data.plates.filter((p) => p.status === "producao").length} em produção · ${
-                  data.plates.filter((p) => ["inativa", "pausada"].includes(p.status)).length
-                } inativas/pausadas`}
+                value={num(commercial.plates.ativas)}
+                hint={`${commercial.plates.producao} em produção · ${commercial.plates.inativas} inativas/pausadas`}
               />
             </div>
           </div>
@@ -205,30 +151,14 @@ function Dashboard() {
             Interações NFC/QR
           </h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Metric
-              label="Hoje"
-              value={num(eventsToday.length)}
-              hint={`NFC ${bySource(eventsToday, "nfc")} · QR ${bySource(eventsToday, "qr")}`}
-            />
-            <Metric
-              label="7 dias"
-              value={num(inRange(7).length)}
-              hint={`NFC ${bySource(inRange(7), "nfc")} · QR ${bySource(inRange(7), "qr")}`}
-            />
-            <Metric
-              label="30 dias"
-              value={num(inRange(30).length)}
-              hint={`NFC ${bySource(inRange(30), "nfc")} · QR ${bySource(inRange(30), "qr")}`}
-            />
-            <Metric
-              label="Mês atual"
-              value={num(monthEvents.length)}
-              hint={`NFC ${bySource(monthEvents, "nfc")} · QR ${bySource(monthEvents, "qr")}`}
-            />
+            <Metric label="Hoje" value={num(data.access.today)} />
+            <Metric label="7 dias" value={num(data.access.last7)} />
+            <Metric label="30 dias" value={num(data.access.last30)} />
+            <Metric label="Mês atual" value={num(data.access.month)} />
             <Metric
               label="Total histórico"
-              value={num(data.allEvents.length)}
-              hint={`NFC ${bySource(data.allEvents, "nfc")} · QR ${bySource(data.allEvents, "qr")}`}
+              value={num(data.access.all.total)}
+              hint={`NFC ${num(data.access.all.nfc)} · QR ${num(data.access.all.qr)}`}
             />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
@@ -283,15 +213,15 @@ function Dashboard() {
         <section className="grid gap-3 sm:grid-cols-2">
           <Metric
             label="Follow-ups de hoje"
-            value={num(followupsHoje.length)}
-            hint={followupsHoje.length ? "Pendentes para hoje" : "Nenhum agendado"}
+            value={num(commercial.followups.hoje)}
+            hint={commercial.followups.hoje ? "Pendentes para hoje" : "Nenhum agendado"}
           />
           <Metric
             label="Follow-ups atrasados"
-            value={num(followupsAtrasados.length)}
+            value={num(commercial.followups.atrasados)}
             hint={
-              followupsAtrasados.length
-                ? `Mais antigo: ${dateBR(followupsAtrasados[0]?.data)}`
+              commercial.followups.atrasados
+                ? `Mais antigo: ${dateBR(commercial.followups.mais_antigo)}`
                 : "Nada em atraso"
             }
           />

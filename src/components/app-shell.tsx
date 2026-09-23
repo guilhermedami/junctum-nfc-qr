@@ -9,6 +9,7 @@ import {
   Target,
   Building2,
   Nfc,
+  UserRoundPlus,
   LogOut,
   Menu,
   Plus,
@@ -29,6 +30,7 @@ const NAV = [
   { to: "/metas", label: "Metas", icon: Target },
   { to: "/clientes", label: "Clientes", icon: Building2 },
   { to: "/placas", label: "Placas", icon: Nfc },
+  { to: "/equipe", label: "Equipe", icon: UserRoundPlus, adminOnly: true },
 ] as const;
 
 const MOBILE_NAV = [
@@ -40,9 +42,10 @@ const MOBILE_NAV = [
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { data: role } = useRole();
   return (
     <nav className="space-y-1">
-      {NAV.map((item) => {
+      {NAV.filter((item) => !("adminOnly" in item) || role === "admin").map((item) => {
         const active = pathname.startsWith(item.to);
         return (
           <Link
