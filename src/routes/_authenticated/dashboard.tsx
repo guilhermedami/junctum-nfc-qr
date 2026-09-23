@@ -103,6 +103,12 @@ function Dashboard() {
         }
       />
 
+      {(commercial.migrationPending || data.access.migrationPending) && (
+        <p role="status" className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          Banco ainda não atualizado. Indicadores provisórios; aplique a migration
+          20260923220000_security_and_metrics.sql no Supabase para ativar os convites e as permissões novas.
+        </p>
+      )}
       <div className="space-y-8">
         <section>
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
