@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type AccessSummary = {
+  migrationPending?: boolean;
   all: { total: number; nfc: number; qr: number };
   today: number;
   last7: number;
@@ -26,6 +27,10 @@ export async function fetchAccessSummary(
     p_from: options.from ?? null,
     p_to: options.to ?? null,
   });
+  if (error?.code === "PGRST202") {
+    const { fallbackAccessSummary } = await import("@/lib/summary-fallback");
+    return fallbackAccessSummary(options);
+  }
   if (error) throw error;
   return data as AccessSummary;
 }

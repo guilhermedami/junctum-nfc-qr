@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 export type CommercialSummary = {
+  migrationPending?: boolean;
   leads: {
     total: number;
     novos: number;
@@ -17,6 +18,10 @@ export type CommercialSummary = {
 
 export async function fetchCommercialSummary(): Promise<CommercialSummary> {
   const { data, error } = await (supabase as SupabaseClient).rpc("commercial_summary");
+  if (error?.code === "PGRST202") {
+    const { fallbackCommercialSummary } = await import("@/lib/summary-fallback");
+    return fallbackCommercialSummary();
+  }
   if (error) throw error;
   return data as CommercialSummary;
 }
