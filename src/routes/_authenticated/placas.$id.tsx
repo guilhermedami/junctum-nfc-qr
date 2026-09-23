@@ -228,8 +228,7 @@ function PlacaDetail() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground">
-              O redirecionamento com registro de acesso será ativado na Fase 5; até lá, o teste do
-              link ainda não leva ao destino.
+              Cada teste de um link ativo também conta como uma interação. Configure o destino e ative a placa antes de imprimir.
             </p>
           </div>
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border p-4">
