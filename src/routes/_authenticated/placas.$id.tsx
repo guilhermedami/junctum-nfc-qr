@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { dateBR, isValidHttpUrl, num, PLATE_STATUS, trackingUrls } from "@/lib/junctum";
+import { fetchAccessSummary } from "@/lib/access-summary";
 
 export const Route = createFileRoute("/_authenticated/placas/$id")({
   head: () => ({ meta: [{ title: "Placa — JUNCTUM" }] }),
@@ -70,16 +71,9 @@ function PlacaDetail() {
     },
   });
 
-  const { data: events = [] } = useQuery({
+  const { data: access } = useQuery({
     queryKey: ["plate-events", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("access_events")
-        .select("source, created_at")
-        .eq("plate_id", id);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => fetchAccessSummary({ plateId: id }),
   });
 
   const [dest, setDest] = useState("");
@@ -106,7 +100,8 @@ function PlacaDetail() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (dest && !isValidHttpUrl(dest)) throw new Error("URL de destino inválida (use http:// ou https://)");
+      if (dest && !isValidHttpUrl(dest))
+        throw new Error("URL de destino inválida (use http:// ou https://)");
       const { error } = await supabase
         .from("plates")
         .update({
@@ -127,23 +122,15 @@ function PlacaDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const d7 = now.getTime() - 7 * 86_400_000;
-    const d30 = now.getTime() - 30 * 86_400_000;
-    const month = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-    const count = (from: number) => events.filter((e) => new Date(e.created_at).getTime() >= from).length;
-    return {
-      total: events.length,
-      nfc: events.filter((e) => e.source === "nfc").length,
-      qr: events.filter((e) => e.source === "qr").length,
-      hoje: count(startToday),
-      d7: count(d7),
-      d30: count(d30),
-      mes: count(month),
-    };
-  }, [events]);
+  const stats = {
+    total: access?.all.total ?? 0,
+    nfc: access?.all.nfc ?? 0,
+    qr: access?.all.qr ?? 0,
+    hoje: access?.today ?? 0,
+    d7: access?.last7 ?? 0,
+    d30: access?.last30 ?? 0,
+    mes: access?.month ?? 0,
+  };
 
   const copy = (text: string, label: string) =>
     navigator.clipboard.writeText(text).then(() => toast.success(`${label} copiado`));
@@ -216,7 +203,12 @@ function PlacaDetail() {
                 </Label>
                 <div className="flex gap-2">
                   <Input readOnly value={url} className="font-mono text-xs" />
-                  <Button size="icon" variant="outline" onClick={() => copy(url, `Link ${k}`)} aria-label={`Copiar link ${k}`}>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => copy(url, `Link ${k}`)}
+                    aria-label={`Copiar link ${k}`}
+                  >
                     <Copy className="size-4" />
                   </Button>
                   <Button size="icon" variant="outline" asChild aria-label={`Testar link ${k}`}>
@@ -228,13 +220,21 @@ function PlacaDetail() {
               </div>
             ))}
             <p className="text-xs text-muted-foreground">
-              Cada teste de um link ativo também conta como uma interação. Configure o destino e ative a placa antes de imprimir.
+              Cada teste de um link ativo também conta como uma interação. Configure o destino e
+              ative a placa antes de imprimir.
             </p>
           </div>
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border p-4">
-            {qrPng && <img src={qrPng} alt="QR Code da placa" className="size-48 rounded bg-background" />}
+            {qrPng && (
+              <img src={qrPng} alt="QR Code da placa" className="size-48 rounded bg-background" />
+            )}
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" disabled={!qrPng} onClick={() => download(qrPng, `junctum-${plate.public_id}.png`)}>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={!qrPng}
+                onClick={() => download(qrPng, `junctum-${plate.public_id}.png`)}
+              >
                 <Download className="mr-1 size-4" /> PNG
               </Button>
               <Button
@@ -260,29 +260,50 @@ function PlacaDetail() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="dest">URL de destino</Label>
-            <Input id="dest" placeholder="https://..." value={dest} onChange={(e) => setDest(e.target.value)} />
+            <Input
+              id="dest"
+              placeholder="https://..."
+              value={dest}
+              onChange={(e) => setDest(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Status</Label>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {Object.entries(PLATE_STATUS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                  <SelectItem key={k} value={k}>
+                    {v}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="venda">Data da venda</Label>
-            <Input id="venda" type="date" value={venda} onChange={(e) => setVenda(e.target.value)} />
+            <Input
+              id="venda"
+              type="date"
+              value={venda}
+              onChange={(e) => setVenda(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="ativ">Data da ativação</Label>
-            <Input id="ativ" type="date" value={ativacao} onChange={(e) => setAtivacao(e.target.value)} />
+            <Input
+              id="ativ"
+              type="date"
+              value={ativacao}
+              onChange={(e) => setAtivacao(e.target.value)}
+            />
           </div>
         </div>
-        <Button onClick={() => save.mutate()} disabled={save.isPending}>Salvar alterações</Button>
+        <Button onClick={() => save.mutate()} disabled={save.isPending}>
+          Salvar alterações
+        </Button>
       </section>
 
       <section className="space-y-3 rounded-lg border border-border p-4">
@@ -315,8 +336,12 @@ function PlacaDetail() {
             {history.map((h) => (
               <li key={h.id} className="rounded-md bg-muted/50 p-3">
                 <div className="text-xs text-muted-foreground">{dt(h.created_at)}</div>
-                <div className="break-all"><span className="text-muted-foreground">De:</span> {h.url_anterior ?? "—"}</div>
-                <div className="break-all"><span className="text-muted-foreground">Para:</span> {h.url_nova ?? "—"}</div>
+                <div className="break-all">
+                  <span className="text-muted-foreground">De:</span> {h.url_anterior ?? "—"}
+                </div>
+                <div className="break-all">
+                  <span className="text-muted-foreground">Para:</span> {h.url_nova ?? "—"}
+                </div>
               </li>
             ))}
           </ul>

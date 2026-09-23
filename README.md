@@ -2,6 +2,37 @@
 
 ## Estado da implementação
 
+### Ativar segurança, métricas e relatórios
+
+Depois de publicar esta alteração, aplique a migration
+`20260923220000_security_and_metrics.sql` no projeto Supabase conectado. Faça
+isso depois de confirmar que a conta administradora já existe: em um banco
+novo, a primeira conta criada recebe o papel admin. Usuários anteriores com
+papel vendedor continuam ativos; revise-os em `user_roles` antes de disponibilizar
+o sistema. Registros antigos sem responsável ficam visíveis apenas ao admin.
+
+Configure **somente no servidor** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+e `PUBLIC_APP_URL` (URL HTTPS publicada do aplicativo). Configure no Supabase
+Auth a URL publicada em **Redirect URLs** e confira a entrega de e-mails de
+convite. Novos vendedores são convidados em **Equipe**; o cadastro público foi
+retirado da interface e o gatilho do banco rejeita usuários não convidados.
+
+Validação antes de gravar uma placa física:
+
+1. Convide um vendedor e confirme que ele vê somente os registros atribuídos.
+2. Crie um cliente e uma placa com URL de destino válida e status **ativa**.
+3. Acesse separadamente os dois links rastreáveis NFC e QR. Confirme o destino
+   e as contagens em **Placas**, no dashboard e no **Relatório** do cliente.
+4. Pause a placa e confirme que o link deixa de redirecionar. Altere o destino,
+   reative e confirme que as URLs permanentes continuam iguais.
+5. Registre avaliações manualmente em datas diferentes e confira o relatório.
+
+O relatório é interno e pode ser impresso ou salvo em PDF pelo navegador. Não
+há integração automática com o Google nem portal de cliente nesta entrega.
+Os totais agora são calculados pelo banco; as listas de registros comerciais
+continuam sujeitas à paginação padrão e deverão receber paginação própria
+quando o volume aumentar.
+
 O redirecionamento público de placas está disponível em `/r/{public_id}/nfc` e
 `/r/{public_id}/qr`. Cada requisição GET a uma placa ativa, com destino HTTP(S)
 configurado, grava um registro em `access_events` antes do redirecionamento.

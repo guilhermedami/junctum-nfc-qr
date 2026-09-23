@@ -3,10 +3,17 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const route = /^\/r\/([a-z0-9]{8,32})\/(nfc|qr)\/?$/;
 
 function notice(message: string, status: number) {
-  return new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JUNCTUM</title><body style="font:16px system-ui;max-width:32rem;margin:12vh auto;padding:1.5rem"><h1>JUNCTUM</h1><p>${message}</p></body></html>`, {
-    status,
-    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" },
-  });
+  return new Response(
+    `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JUNCTUM</title><body style="font:16px system-ui;max-width:32rem;margin:12vh auto;padding:1.5rem"><h1>JUNCTUM</h1><p>${message}</p></body></html>`,
+    {
+      status,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "no-store",
+        "x-robots-tag": "noindex",
+      },
+    },
+  );
 }
 
 /** Public endpoint for permanent links printed on NFC tags and QR codes. */
@@ -21,7 +28,7 @@ export async function handlePlateRedirect(request: Request): Promise<Response | 
     const { data: plate, error } = await supabaseAdmin
       .from("plates")
       .select("id, client_id, status, destination_url")
-      .eq("public_id", match[1])
+      .eq("public_id", match[1]!)
       .maybeSingle();
     if (error) throw error;
     if (!plate) return notice("Placa não encontrada.", 404);
