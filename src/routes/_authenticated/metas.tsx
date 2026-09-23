@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/app-shell";
@@ -34,6 +34,7 @@ export const Route = createFileRoute("/_authenticated/metas")({
 function Metas() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
   const [form, setForm] = useState({
