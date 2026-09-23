@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/app-shell";
@@ -34,6 +34,7 @@ export const Route = createFileRoute("/_authenticated/metas")({
 function Metas() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
   const [form, setForm] = useState({
@@ -75,26 +76,77 @@ function Metas() {
     },
   });
 
-  const create = useMutation({
+  const save = useMutation({
     mutationFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase.from("goals").insert({
+      const payload = {
         metrica: form.metrica,
         periodo: form.periodo,
         data_inicio: form.data_inicio,
         data_fim: form.data_fim,
         alvo: Number(form.alvo || 0),
-        owner_id: userData.user?.id ?? null,
-      });
+      };
+      if (editingId) {
+        const { error } = await supabase.from("goals").update(payload).eq("id", editingId);
+        if (error) throw error;
+        return;
+      }
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("goals")
+        .insert({ ...payload, owner_id: userData.user?.id ?? null });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Meta criada");
+      toast.success(editingId ? "Meta atualizada" : "Meta criada");
       setOpen(false);
+      setEditingId(null);
       queryClient.invalidateQueries({ queryKey: ["goals"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("goals").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Meta excluída");
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function openNew() {
+    setEditingId(null);
+    setForm({
+      metrica: "vendas",
+      periodo: "mensal",
+      data_inicio: monthStart.toISOString().slice(0, 10),
+      data_fim: monthEnd.toISOString().slice(0, 10),
+      alvo: "",
+    });
+    setOpen(true);
+  }
+
+  function openEdit(g: {
+    id: string;
+    metrica: string;
+    periodo: string;
+    data_inicio: string;
+    data_fim: string;
+    alvo: number;
+  }) {
+    setEditingId(g.id);
+    setForm({
+      metrica: g.metrica,
+      periodo: g.periodo,
+      data_inicio: g.data_inicio,
+      data_fim: g.data_fim,
+      alvo: String(g.alvo ?? ""),
+    });
+    setOpen(true);
+  }
 
   function computeRealized(metrica: string, start: string, end: string) {
     if (!realized) return 0;
@@ -136,15 +188,21 @@ function Metas() {
         title="Metas"
         description="Metas comparadas com o realizado calculado a partir dos dados reais."
         action={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) setEditingId(null);
+            }}
+          >
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={openNew}>
                 <Plus className="mr-2 size-4" /> Nova meta
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nova meta</DialogTitle>
+                <DialogTitle>{editingId ? "Editar meta" : "Nova meta"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1.5">
@@ -213,8 +271,11 @@ function Metas() {
                 </div>
               </div>
               <DialogFooter>
-                <Button disabled={!form.alvo} onClick={() => create.mutate()}>
-                  Criar meta
+                <Button
+                  disabled={!form.alvo || save.isPending}
+                  onClick={() => save.mutate()}
+                >
+                  {editingId ? "Salvar alterações" : "Criar meta"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -235,9 +296,29 @@ function Metas() {
                 <h3 className="text-sm font-semibold">
                   {GOAL_METRICS[g.metrica] ?? g.metrica}
                 </h3>
-                <span className="text-xs text-muted-foreground">
-                  {dateBR(g.data_inicio)} – {dateBR(g.data_fim)}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">
+                    {dateBR(g.data_inicio)} – {dateBR(g.data_fim)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Editar meta"
+                    onClick={() => openEdit(g)}
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Excluir meta"
+                    onClick={() => {
+                      if (window.confirm("Excluir esta meta?")) remove.mutate(g.id);
+                    }}
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
               <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
                 <div>
