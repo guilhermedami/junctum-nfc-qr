@@ -271,8 +271,11 @@ function Metas() {
                 </div>
               </div>
               <DialogFooter>
-                <Button disabled={!form.alvo} onClick={() => create.mutate()}>
-                  Criar meta
+                <Button
+                  disabled={!form.alvo || save.isPending}
+                  onClick={() => save.mutate()}
+                >
+                  {editingId ? "Salvar alterações" : "Criar meta"}
                 </Button>
               </DialogFooter>
             </DialogContent>
