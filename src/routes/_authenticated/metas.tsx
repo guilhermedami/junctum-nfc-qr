@@ -76,26 +76,77 @@ function Metas() {
     },
   });
 
-  const create = useMutation({
+  const save = useMutation({
     mutationFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const { error } = await supabase.from("goals").insert({
+      const payload = {
         metrica: form.metrica,
         periodo: form.periodo,
         data_inicio: form.data_inicio,
         data_fim: form.data_fim,
         alvo: Number(form.alvo || 0),
-        owner_id: userData.user?.id ?? null,
-      });
+      };
+      if (editingId) {
+        const { error } = await supabase.from("goals").update(payload).eq("id", editingId);
+        if (error) throw error;
+        return;
+      }
+      const { data: userData } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("goals")
+        .insert({ ...payload, owner_id: userData.user?.id ?? null });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Meta criada");
+      toast.success(editingId ? "Meta atualizada" : "Meta criada");
       setOpen(false);
+      setEditingId(null);
       queryClient.invalidateQueries({ queryKey: ["goals"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("goals").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Meta excluída");
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function openNew() {
+    setEditingId(null);
+    setForm({
+      metrica: "vendas",
+      periodo: "mensal",
+      data_inicio: monthStart.toISOString().slice(0, 10),
+      data_fim: monthEnd.toISOString().slice(0, 10),
+      alvo: "",
+    });
+    setOpen(true);
+  }
+
+  function openEdit(g: {
+    id: string;
+    metrica: string;
+    periodo: string;
+    data_inicio: string;
+    data_fim: string;
+    alvo: number;
+  }) {
+    setEditingId(g.id);
+    setForm({
+      metrica: g.metrica,
+      periodo: g.periodo,
+      data_inicio: g.data_inicio,
+      data_fim: g.data_fim,
+      alvo: String(g.alvo ?? ""),
+    });
+    setOpen(true);
+  }
 
   function computeRealized(metrica: string, start: string, end: string) {
     if (!realized) return 0;
