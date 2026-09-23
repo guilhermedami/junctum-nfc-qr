@@ -21,6 +21,7 @@ import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPlacasRouteImport } from './routes/_authenticated/placas'
 import { Route as AuthenticatedProspeccaoRouteImport } from './routes/_authenticated/prospeccao'
 import { Route as AuthenticatedLeadsIdRouteImport } from './routes/_authenticated/leads.$id'
+import { Route as AuthenticatedPlacasIdRouteImport } from './routes/_authenticated/placas.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -81,6 +82,11 @@ const AuthenticatedLeadsIdRoute = AuthenticatedLeadsIdRouteImport.update({
   path: '/leads/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPlacasIdRoute = AuthenticatedPlacasIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedPlacasRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -91,9 +97,10 @@ export interface FileRoutesByFullPath {
   '/followups': typeof AuthenticatedFollowupsRoute
   '/mensagens': typeof AuthenticatedMensagensRoute
   '/metas': typeof AuthenticatedMetasRoute
-  '/placas': typeof AuthenticatedPlacasRoute
+  '/placas': typeof AuthenticatedPlacasRouteWithChildren
   '/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/placas/$id': typeof AuthenticatedPlacasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -104,9 +111,10 @@ export interface FileRoutesByTo {
   '/followups': typeof AuthenticatedFollowupsRoute
   '/mensagens': typeof AuthenticatedMensagensRoute
   '/metas': typeof AuthenticatedMetasRoute
-  '/placas': typeof AuthenticatedPlacasRoute
+  '/placas': typeof AuthenticatedPlacasRouteWithChildren
   '/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/placas/$id': typeof AuthenticatedPlacasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -119,9 +127,10 @@ export interface FileRoutesById {
   '/_authenticated/followups': typeof AuthenticatedFollowupsRoute
   '/_authenticated/mensagens': typeof AuthenticatedMensagensRoute
   '/_authenticated/metas': typeof AuthenticatedMetasRoute
-  '/_authenticated/placas': typeof AuthenticatedPlacasRoute
+  '/_authenticated/placas': typeof AuthenticatedPlacasRouteWithChildren
   '/_authenticated/prospeccao': typeof AuthenticatedProspeccaoRoute
   '/_authenticated/leads/$id': typeof AuthenticatedLeadsIdRoute
+  '/_authenticated/placas/$id': typeof AuthenticatedPlacasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/placas'
     | '/prospeccao'
     | '/leads/$id'
+    | '/placas/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/placas'
     | '/prospeccao'
     | '/leads/$id'
+    | '/placas/$id'
   id:
     | '__root__'
     | '/'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/placas'
     | '/_authenticated/prospeccao'
     | '/_authenticated/leads/$id'
+    | '/_authenticated/placas/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -258,8 +270,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeadsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/placas/$id': {
+      id: '/_authenticated/placas/$id'
+      path: '/$id'
+      fullPath: '/placas/$id'
+      preLoaderRoute: typeof AuthenticatedPlacasIdRouteImport
+      parentRoute: typeof AuthenticatedPlacasRoute
+    }
   }
 }
+
+interface AuthenticatedPlacasRouteChildren {
+  AuthenticatedPlacasIdRoute: typeof AuthenticatedPlacasIdRoute
+}
+
+const AuthenticatedPlacasRouteChildren: AuthenticatedPlacasRouteChildren = {
+  AuthenticatedPlacasIdRoute: AuthenticatedPlacasIdRoute,
+}
+
+const AuthenticatedPlacasRouteWithChildren =
+  AuthenticatedPlacasRoute._addFileChildren(AuthenticatedPlacasRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
@@ -268,7 +298,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFollowupsRoute: typeof AuthenticatedFollowupsRoute
   AuthenticatedMensagensRoute: typeof AuthenticatedMensagensRoute
   AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
-  AuthenticatedPlacasRoute: typeof AuthenticatedPlacasRoute
+  AuthenticatedPlacasRoute: typeof AuthenticatedPlacasRouteWithChildren
   AuthenticatedProspeccaoRoute: typeof AuthenticatedProspeccaoRoute
   AuthenticatedLeadsIdRoute: typeof AuthenticatedLeadsIdRoute
 }
@@ -280,7 +310,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFollowupsRoute: AuthenticatedFollowupsRoute,
   AuthenticatedMensagensRoute: AuthenticatedMensagensRoute,
   AuthenticatedMetasRoute: AuthenticatedMetasRoute,
-  AuthenticatedPlacasRoute: AuthenticatedPlacasRoute,
+  AuthenticatedPlacasRoute: AuthenticatedPlacasRouteWithChildren,
   AuthenticatedProspeccaoRoute: AuthenticatedProspeccaoRoute,
   AuthenticatedLeadsIdRoute: AuthenticatedLeadsIdRoute,
 }
