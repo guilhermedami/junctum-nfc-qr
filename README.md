@@ -1,5 +1,21 @@
 # LinkWise Pro
 
+## Estado da implementação
+
+O redirecionamento público de placas está disponível em `/r/{public_id}/nfc` e
+`/r/{public_id}/qr`. Cada requisição GET a uma placa ativa, com destino HTTP(S)
+configurado, grava um registro em `access_events` antes do redirecionamento.
+Falhas de gravação retornam indisponibilidade em vez de apresentar uma interação
+que não foi medida. Os links precisam apontar para uma implantação deste app com
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` configurados somente no servidor.
+Execute a migration `20260923180000_secure_plate_ids.sql` antes de emitir novas
+placas; URLs antigas permanecem válidas. Confirme a implantação e teste os links
+em um domínio definitivo antes de gravar chips ou imprimir códigos QR.
+
+Ainda faltam relatórios de cliente, registro manual de avaliações Google e
+portal do cliente (fases 7 e 8). Métricas de acesso existentes dependem dos
+eventos registrados no backend e não representam visitantes únicos.
+
 JUNCTUM — CRM + PROSPECÇÃO + GESTÃO E ANALYTICS DE PLACAS NFC/QR
 
 Quero construir uma aplicação SaaS web completa chamada JUNCTUM.
