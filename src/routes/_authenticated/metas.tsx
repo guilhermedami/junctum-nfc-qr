@@ -296,9 +296,29 @@ function Metas() {
                 <h3 className="text-sm font-semibold">
                   {GOAL_METRICS[g.metrica] ?? g.metrica}
                 </h3>
-                <span className="text-xs text-muted-foreground">
-                  {dateBR(g.data_inicio)} – {dateBR(g.data_fim)}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-muted-foreground">
+                    {dateBR(g.data_inicio)} – {dateBR(g.data_fim)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Editar meta"
+                    onClick={() => openEdit(g)}
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Excluir meta"
+                    onClick={() => {
+                      if (window.confirm("Excluir esta meta?")) remove.mutate(g.id);
+                    }}
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
               <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
                 <div>
