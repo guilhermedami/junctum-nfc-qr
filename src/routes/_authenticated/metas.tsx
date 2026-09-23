@@ -188,15 +188,21 @@ function Metas() {
         title="Metas"
         description="Metas comparadas com o realizado calculado a partir dos dados reais."
         action={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(v) => {
+              setOpen(v);
+              if (!v) setEditingId(null);
+            }}
+          >
             <DialogTrigger asChild>
-              <Button>
+              <Button onClick={openNew}>
                 <Plus className="mr-2 size-4" /> Nova meta
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nova meta</DialogTitle>
+                <DialogTitle>{editingId ? "Editar meta" : "Nova meta"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-1.5">
